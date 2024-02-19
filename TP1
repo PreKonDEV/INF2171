@@ -1,0 +1,9 @@
+.eqv PrintInt, 1
+.eqv Exit, 10
+
+
+li a7, PrintInt
+li a0, 42
+ecall
+li a7, Exit
+ecall

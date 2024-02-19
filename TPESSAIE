@@ -1,0 +1,324 @@
+
+#TP2 - Jeu de puissance 4
+
+# Ce programme permet a 2 joueurs de s'affronter au jeu Pussance4
+
+# Les joueurs entre le numero de la range dans lequel ils veulent jouer, chacun leur tour.
+# Lorsqu'un joueur aligne 4 jetons horizontalement, verticalement ou en diagonale, il gagne.
+
+# La commande "d" affiche le jeu et "q" quite le jeu.
+# Les colonnes valides sont de 1-7. 
+# Si une piece est ajoutee sur une colonne pleine le joueur perd la partie.
+
+ #Appels systeme
+	.eqv PrintInt, 1
+	.eqv ReadChar, 12
+	.eqv Exit, 10
+	.eqv ReadString, 8
+	.eqv PrintString, 4
+	.eqv PrintChar, 11
+	
+	.eqv d, 100
+	.eqv q, 113
+	
+.data
+	
+	#Messages de fin de partie
+	PXgagne: .asciz "Le joueur X gagne.",
+	POgagne: .asciz "Le joueur O gagne.",
+	PXperd: .asciz "Le joueur X perd.",
+	POperd: .asciz "le joueur O perd.",
+	PXdj: .asciz "Au joueur X de jouer.",
+	POdj: .asciz "Au joueur O de jouer.",
+	ln: .asciz "\n",
+	
+	#Grille
+	.eqv pieceX, 88
+	.eqv pieceO, 79
+	.align 8
+	
+	R1: .word 58, 46, 46, 46, 46, 46, 46, 46,
+	R2:	.word 58, 46, 46, 46, 46, 46, 46, 46,
+	R3:	.word 58, 46, 46, 46, 46, 46, 46, 46,
+	R4:	.word 58, 46, 46, 46, 46, 46, 46, 46,
+	R5:	.word 58, 46, 46, 46, 46, 46, 46, 46,
+	R6:	.word 58, 46, 46, 46, 46, 46, 46, 46,
+	R7:	.word 58, 46, 46, 46, 46, 46, 46, 46, #rangee extra
+	
+	#Message d'erreur pour charactere invalide
+	Mess_Erreur: .asciz "Erreur d'entree."
+	
+	# t0=comparaison avec a0
+	# t1=comparaison avec tableau (adresse)
+	# t2=valeur dans tableau
+	# t4=modulo pour t5
+	# t5=joueur a jouer int 0 = Joueur X, int 1 = Joueur O
+	
+.text
+	la s0, R1
+	la s1, R2
+	la s2, R3
+	la s3, R4
+	la s4, R5
+	la s5, R6
+	la s6, R7
+	li t3, 46
+	li t4, 2 #peut etre change
+	li t5, -1
+	li t6, 55
+	
+	
+changeJoueur:
+	#change le joueur (t5=0 -> joueur X, t5=1 -> joueur O)
+	li t4, 2
+	addi t5, t5, 1
+	rem t5, t5, t4
+	
+main:
+	# Prend le charactere entree par le joueur
+	li a7, ReadChar
+	ecall
+	
+	# d pour montrer la grille
+	li t0, d
+	beq a0, t0, affichage
+	
+	# q pour quitter
+	li t0, q
+	beq a0, t0, fin
+	
+	# choisi la colonne et branche dans choix de rangee
+	li t0, 48 #char = '0'
+	li t4, 46 #char = '.'
+	li t6, 54 #char = '7' 
+	li t1, 0
+	
+loop:	addi t0, t0, 1 #incremente t1 pour connaitre la colonne (colone 0 = ':')
+	addi t1, t1, 4
+	beq a0, t0, r1
+	bgt t0, t6, erreur #envoie message d'erreur si input != 1-7 (plus grand que 7)
+	ble a0, t0, erreur #envoie message d'erreur si input != 1-7 (plus petit que 1)
+	j loop
+	
+r1:	
+	la t2, R1		
+	add t2, t2, t1
+	lw t3, (t2)	#verifie s'il n'y a pas deja une piece dans la rangee
+	bne t3, t4, r2	#monte a la rangee superieur s'il y a deja une piece
+	j tourAJouer 	#place la piece du joueur a jouer
+	
+r2:			
+	la t2, R2
+	add t2, t2, t1
+	lw t3, (t2)
+	bne t3, t4, r3
+	j tourAJouer
+	
+r3:
+	la t2, R3
+	add t2, t2, t1
+	lw t3, (t2)
+	bne t3, t4, r4
+	j tourAJouer
+r4:
+	la t2, R4
+	add t2, t2, t1
+	lw t3, (t2)
+	bne t3, t4, r5
+	j tourAJouer
+r5:
+	la t2, R5
+	add t2, t2, t1
+	lw t3, (t2)
+	bne t3, t4, r6
+	j tourAJouer
+r6:
+	la t2, R6
+	add t2, t2, t1
+	lw t3, (t2)
+	bne t3, t4, r7
+	j tourAJouer
+
+r7:
+	la t2, R7
+	add t2, t2, t1
+	lw t3, (t2)
+	j affichage
+	beqz t5, joueurXperd
+	j joueurOperd
+	
+tourAJouer:
+	li t3, pieceX
+	beqz t5, ajoutePiece
+	li t3, pieceO
+	j ajoutePiece
+	
+ajoutePiece:
+	sw t3, (t2)
+	j changeJoueur
+	
+#diagonaleDroite:
+	#add (0,0)+(1,1)+(2,2)+(3,3) = 88*3 = X gagne
+	#                            = 79*3 = O gagne
+#diagonaleGauche:
+	#add (0,0)+(-1,-1)+(-2,-2)+(-3,-3) = 88*3 = X gagne
+	#                            = 79*3 = O gagne
+#verticale:
+	#add (0,0)+(0,1)+(0,2)+(0,3) = 88*3 = X gagne
+	#                            = 79*3 = O gagne
+#horizontale:
+	#add (0,0)+(1,0)+(2,0)+(3,0) = 88*3 = X gagne
+	#                            = 79*3 = O gagne
+	
+	
+joueurXperd:
+	la a0, PXperd
+	li a7, PrintString
+	j fin
+	
+joueurOperd:
+	la a0, POperd
+	li a7, PrintString
+	j fin
+
+joueurAperdre:
+	beqz t5, joueurXperd
+	j joueurOperd
+	
+joueurAJouer:
+	beqz t5, joueurXaJouer
+	j joueurOaJouer
+	
+joueurXaJouer:
+	la a0, PXdj
+	ecall
+	j main
+	
+joueurOaJouer:
+	la a0, POdj
+	ecall
+	j main
+	
+erreur:	#good
+	la a0, Mess_Erreur
+	li a7, PrintString
+	ecall
+	j fin
+	
+	
+affichage:
+	li t1, 0
+	li t0, 7
+	li a7, PrintString
+	
+loopr1:	la a0, R1
+inloopr1:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr2
+		addi t1, t1, 1
+		j inloopr1
+
+loopr2:	
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R2
+inloopr2:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr3
+		addi t1, t1, 1
+		j inloopr2
+	
+loopr3:	
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R3
+inloopr3:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr4
+		addi t1, t1, 1
+		j inloopr3
+	
+loopr4:	
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R4
+inloopr4:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr5
+		addi t1, t1, 1
+		j inloopr4
+		
+loopr5:	
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R5
+inloopr5:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr6
+		addi t1, t1, 1
+		j inloopr5
+	
+loopr6:	
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R6
+inloopr6:	
+		ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr7
+		addi t1, t1, 1
+		j inloopr6
+		
+loopr7: 
+	li t1, 0
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	la a0, R7
+inloopr7:	ecall
+		addi a0, a0, 4
+		beq t1, t0, loopr8
+		addi t1, t1, 1
+		j inloopr7
+loopr8:
+	li a0, 58
+	li a7, PrintChar
+	ecall
+	li a7, PrintString
+	la a0, ln
+	ecall
+	
+	j joueurAJouer
+	
+
+fin:	
+	li a7, Exit
+	ecall
